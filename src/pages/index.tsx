@@ -1,113 +1,303 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+import { useState, useEffect } from 'react';
+import Head from 'next/head';
+import { ParkingLot } from '@/models/ParkingLot';
+import { Motorcycle, Car, Bus, Vehicle } from '@/models/Vehicle';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Initialize our three parking lots
+const parkingLots = [
+  new ParkingLot(5, 20, 25, 5),
+  new ParkingLot(5, 20, 25, 5),
+  new ParkingLot(5, 20, 25, 5)
+];
 
 export default function Home() {
+  const [licensePlate, setLicensePlate] = useState('');
+  const [vehicleType, setVehicleType] = useState('Car');
+  const [lotNumber, setLotNumber] = useState(1);
+  const [message, setMessage] = useState('');
+  const [searchLicensePlate, setSearchLicensePlate] = useState('');
+  const [parkedVehicles, setParkedVehicles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Load parked vehicles on component mount
+  useEffect(() => {
+    fetchParkedVehicles();
+  }, []);
+
+  const fetchParkedVehicles = async () => {
+    try {
+      const response = await fetch('/api/vehicles');
+      const data = await response.json();
+      if (data.success) {
+        setParkedVehicles(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching vehicles:', error);
+    }
+  };
+
+  const handlePark = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    if (!licensePlate.trim()) {
+      setMessage('Please enter a license plate');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Check if vehicle already exists
+      const existingVehicle = parkedVehicles.find(v => v.licensePlate === licensePlate);
+      if (existingVehicle) {
+        setMessage(`Vehicle with license plate ${licensePlate} is already parked`);
+        setLoading(false);
+        return;
+      }
+
+      // Create vehicle instance based on type
+      let vehicle;
+      switch (vehicleType) {
+        case 'Motorcycle':
+          vehicle = new Motorcycle();
+          break;
+        case 'Car':
+          vehicle = new Car();
+          break;
+        case 'Bus':
+          vehicle = new Bus();
+          break;
+        default:
+          vehicle = new Car();
+      }
+
+      // Try to park the vehicle
+      const selectedLot = parkingLots[lotNumber - 1];
+      const parked = vehicle.park(selectedLot);
+
+      if (!parked) {
+        setMessage(`No available spots for ${vehicleType} in Lot ${lotNumber}`);
+        setLoading(false);
+        return;
+      }
+
+      // Get the slot information
+      const slotLocation = selectedLot.findSlot(vehicle.parkedSlot!);
+      const levelMatch = slotLocation.match(/Level (\d+)/);
+      const level = levelMatch ? parseInt(levelMatch[1]) : 0;
+
+      // Save to database
+      const response = await fetch('/api/vehicles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          licensePlate,
+          vehicleType,
+          lotNumber,
+          level,
+          slotNumber: vehicle.parkedSlot!.lot_number
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage(`${vehicleType} parked successfully in Lot ${lotNumber}, ${slotLocation}, Slot #${vehicle.parkedSlot!.lot_number}`);
+        setLicensePlate('');
+        fetchParkedVehicles();
+      } else {
+        setMessage('Error parking vehicle');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setMessage('An error occurred while parking');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchLicensePlate.trim()) {
+      setMessage('Please enter a license plate to search');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/vehicles/${searchLicensePlate}`);
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        const vehicle = data.data;
+        setMessage(`Found: ${vehicle.vehicleType} with license ${vehicle.licensePlate} is parked in Lot ${vehicle.lotNumber}, Level ${vehicle.level}, Slot #${vehicle.slotNumber}`);
+      } else {
+        setMessage(`No vehicle found with license plate ${searchLicensePlate}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setMessage('An error occurred while searching');
+    }
+  };
+
+  const handleLeave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchLicensePlate.trim()) {
+      setMessage('Please enter a license plate to leave');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/vehicles/${searchLicensePlate}`, {
+        method: 'DELETE',
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage(`Vehicle with license plate ${searchLicensePlate} has left the parking lot`);
+        setSearchLicensePlate('');
+        fetchParkedVehicles();
+      } else {
+        setMessage(`No vehicle found with license plate ${searchLicensePlate}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setMessage('An error occurred while processing departure');
+    }
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/pages/index.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <>
+      <Head>
+        <title>Parking Lot System</title>
+        <meta name="description" content="Parking lot management system" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+      <main className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-center mb-8">Parking Lot System</h1>
+        
+        {message && (
+          <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6" role="alert">
+            <p>{message}</p>
+          </div>
+        )}
+        
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Park a vehicle section */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-4">Park a Vehicle</h2>
+            <form onSubmit={handlePark}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">License Plate</label>
+                <input
+                  type="text"
+                  value={licensePlate}
+                  onChange={(e) => setLicensePlate(e.target.value)}
+                  className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                  placeholder="Enter license plate"
+                  required
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Vehicle Type</label>
+                <select
+                  value={vehicleType}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                >
+                  <option value="Motorcycle">Motorcycle</option>
+                  <option value="Car">Car</option>
+                  <option value="Bus">Bus</option>
+                </select>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Parking Lot</label>
+                <select
+                  value={lotNumber}
+                  onChange={(e) => setLotNumber(parseInt(e.target.value))}
+                  className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                >
+                  <option value={1}>Lot 1 - Available: {parkingLots[0].getFreeSpots()} spots</option>
+                  <option value={2}>Lot 2 - Available: {parkingLots[1].getFreeSpots()} spots</option>
+                  <option value={3}>Lot 3 - Available: {parkingLots[2].getFreeSpots()} spots</option>
+                </select>
+              </div>
+              
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 disabled:opacity-50"
+              >
+                {loading ? 'Processing...' : 'Park Vehicle'}
+              </button>
+            </form>
+          </div>
+          
+          {/* Find/Leave section */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-4">Find or Leave Parking</h2>
+            <form>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">License Plate</label>
+                <input
+                  type="text"
+                  value={searchLicensePlate}
+                  onChange={(e) => setSearchLicensePlate(e.target.value)}
+                  className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+                  placeholder="Enter license plate to find/leave"
+                  required
+                />
+              </div>
+              
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={handleLeave}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 w-[50%] rounded focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+                >
+                  Leave Parking
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+        
+        {/* Parked vehicles list */}
+        <div className="mt-12 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Currently Parked Vehicles</h2>
+          {parkedVehicles.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">License Plate</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parked At</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {parkedVehicles.map((vehicle) => (
+                    <tr key={vehicle.licensePlate}>
+                      <td className="px-6 py-4 whitespace-nowrap">{vehicle.licensePlate}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{vehicle.vehicleType}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">Lot {vehicle.lotNumber}, Level {vehicle.level}, Slot {vehicle.slotNumber}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{new Date(vehicle.parkedAt).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-gray-500">No vehicles currently parked</p>
+          )}
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+    </>
   );
 }
