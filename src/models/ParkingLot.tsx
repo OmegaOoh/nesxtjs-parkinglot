@@ -41,4 +41,8 @@ export class ParkingLot {
     }
     return n;
   }
+  
+  public parkAtSpot(vehicle: Vehicle, level: number, slot: number) {
+    this.levels[level].parkAtSpot(vehicle, slot)
+  }
 }

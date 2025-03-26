@@ -4,15 +4,15 @@ import { Vehicle } from "./Vehicle";
 
 export class Level {
   private level: number;
-  private availableSpace : number;
+  private availableSpace: number;
   private parkingSlot: Array<Slot> = new Array<Slot>()
   
   public constructor(level: number,
-                     motorcycle_spot:number,
-                     compact_spot:number,
-                     large_spot:number,) {
+    motorcycle_spot: number,
+    compact_spot: number,
+    large_spot: number,) {
     this.level = level;
-    this.availableSpace = motorcycle_spot + compact_spot  + large_spot
+    this.availableSpace = motorcycle_spot + compact_spot + large_spot
     // Spot Creation
     for (let i = 0; i < motorcycle_spot; i++) {
       this.parkingSlot.push(new Slot(spotSize.bike, i));
@@ -25,7 +25,7 @@ export class Level {
     }
   }
   
-  public park(vehicle: Vehicle) : Slot | undefined {
+  public park(vehicle: Vehicle): Slot | undefined {
     const park = this.parkingSlot.find(slot => slot.park(vehicle));
     if (park == undefined) return undefined // Cannot park
     this.availableSpace--;
@@ -42,5 +42,14 @@ export class Level {
   
   public getFreeSpot() {
     return this.availableSpace
+  }
+  
+  public parkAtSpot(vehicle: Vehicle, spot: number){ 
+    const parkSlot = this.parkingSlot[spot];
+    const canPark = parkSlot.park(vehicle)
+    if (canPark) {
+      this.availableSpace--
+    }
+    return canPark
   }
 }

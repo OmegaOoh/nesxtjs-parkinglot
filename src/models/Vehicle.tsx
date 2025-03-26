@@ -19,9 +19,13 @@ export abstract class Vehicle {
     this.parkedSlot = slot;
     return true
   }
-
+  
   public leave(): void {
     this.parkedSlot?.leave()
+  }
+  
+  public getParkedSlot() {
+    return this.parkedSlot
   }
   
   public repr(): string {
