@@ -3,34 +3,31 @@ import { Slot } from "./ParkingSlot";
 
 export abstract class Vehicle {
   readonly sizeClass: number = Infinity;
-  private parkedSlot: Slot | undefined;
+  private licensePlate: string;
+  
+  public constructor(plate: string) {
+    this.licensePlate = plate;
+  }
   
   public canFit(slot: Slot): boolean {
     return slot.getSize() >= this.sizeClass
   }
   
-  public park(lot: ParkingLot): boolean {
+  public park(lot: ParkingLot): Slot | undefined{
     /* 
     Find and spot and park in ParkingLot,
     Return true if there is a spot to park else return false
     */
     const slot = lot.park(this);
-    if (slot == undefined) return false;
-    this.parkedSlot = slot;
-    return true
-  }
-  
-  public leave(): void {
-    this.parkedSlot?.leave()
-  }
-  
-  public getParkedSlot() {
-    return this.parkedSlot
+    if (slot == undefined) return undefined;
+    return slot
   }
   
   public repr(): string {
     throw new Error("Method not implemented")
   }
+  
+  public get_plate() {return this.licensePlate}
 }
 
 export class Motorcycle extends Vehicle {

@@ -52,4 +52,12 @@ export class Level {
     }
     return canPark
   }
+  
+  public findVehicle(plate: string): Slot | undefined {
+    for (const s of this.parkingSlot) {
+      const vehicle = s.getVehicle()
+      if (vehicle?.get_plate() == plate) return s 
+    }
+    return undefined
+  }
 }

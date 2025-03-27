@@ -1,9 +1,9 @@
 import { Vehicle } from "./Vehicle";
 
 export class Slot {
-  private isOccupied: boolean = false;
   private lot_number: number;
   private size: number;
+  private parkedVechicle: Vehicle | undefined;
   
   public constructor(size: number, lot_number: number) {
     this.size = size;
@@ -16,7 +16,7 @@ export class Slot {
   
   public park(vehicle: Vehicle) {
     if (this.canPark(vehicle)){
-      this.isOccupied = true;
+      this.parkedVechicle = vehicle
       return true;
     }
     return false;
@@ -27,10 +27,15 @@ export class Slot {
   }
   
   public leave() {
-    this.isOccupied = false
+    this.parkedVechicle = undefined;
   }
   
   public getLotNumber(): number {
     return this.lot_number
   }
+  
+  public getVehicle() {
+    return this.parkedVechicle;
+  }
+  
 }

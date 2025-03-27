@@ -12,10 +12,6 @@ const VehicleSchema = new mongoose.Schema({
     required: true,
     enum: ['Motorcycle', 'Car', 'Bus']
   },
-  lotNumber: {
-    type: Number,
-    required: true
-  },
   level: {
     type: Number,
     required: true
