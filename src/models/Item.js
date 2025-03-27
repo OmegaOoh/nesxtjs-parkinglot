@@ -23,10 +23,6 @@ const VehicleSchema = new mongoose.Schema({
   slotNumber: {
     type: Number,
     required: true
-  },
-  parkedAt: {
-    type: Date,
-    default: Date.now
   }
 });
 

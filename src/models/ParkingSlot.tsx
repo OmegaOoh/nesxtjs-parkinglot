@@ -29,4 +29,8 @@ export class Slot {
   public leave() {
     this.isOccupied = false
   }
+  
+  public getLotNumber(): number {
+    return this.lot_number
+  }
 }

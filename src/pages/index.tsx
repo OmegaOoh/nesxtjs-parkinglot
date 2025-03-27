@@ -137,7 +137,7 @@ export default function Home() {
       const slotLocation = selectedLot.findSlot(parkedSlot);
       const levelMatch = slotLocation.match(/Level (\d+)/);
       const level = levelMatch ? parseInt(levelMatch[1]) : 0;
-      const slotNumber = parkedSlot.lot_number;
+      const slotNumber = parkedSlot.getLotNumber();
 
       // Save to database
       const response = await fetch("/api/vehicles", {
@@ -368,9 +368,6 @@ export default function Home() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Location
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Parked At
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -385,9 +382,6 @@ export default function Home() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         Lot {vehicle.lotNumber}, Level {vehicle.level}, Slot{" "}
                         {vehicle.slotNumber}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {new Date(vehicle.parkedAt).toLocaleString()}
                       </td>
                     </tr>
                   ))}
