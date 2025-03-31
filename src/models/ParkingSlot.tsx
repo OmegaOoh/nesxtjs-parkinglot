@@ -11,7 +11,7 @@ export class Slot {
   }
   
   public canPark(vehicle: Vehicle) {
-    return vehicle.canFit(this) && !this.isOccupied
+    return vehicle.canFit(this) && !this.parkedVechicle
   }
   
   public park(vehicle: Vehicle) {
