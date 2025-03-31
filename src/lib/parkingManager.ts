@@ -63,13 +63,14 @@ export class ParkingLotManager {
     if (!vehicleObj.park(this.parkingLot)) throw Error("No Available spot");
     const slot = this.parkingLot.findVehicle(licensePlate);
     if (!slot) throw Error("No Available spot");
-    const slotNumber = slot.getLotNumber()
+    const slotNumber = slot.getLotNumber();
     const level = this.parkingLot.findSlot(slot);
+    if (level === -1) throw Error("Vehicle Parked in unavailable spot");
     const v = new Vehicle({
       licensePlate: vehicleObj.get_plate(),
       vehicleType: vehicleType,
       level: level,
-      slotNumber: slotNumber
+      slotNumber: slotNumber,
     });
     try {
       await Vehicle.create(v);
@@ -80,12 +81,23 @@ export class ParkingLotManager {
 
   public async vehicleLeave(licensePlate: string) {
     await DBConnector.getInstance().connect();
-    await Vehicle.deleteOne({ licensePlate });
-    this.parkingLot.findVehicle(licensePlate)?.leave();
+    const vehicle = await Vehicle.findOneAndDelete({ licensePlate });
+    const plate = vehicle.licensePlate;
+    const level = vehicle.level;
+    const slot = vehicle.slotNumber;
+    this.parkingLot.LeaveFromSpot(plate, level, slot)
   }
 
   public async getAllParkedVehicle() {
     await DBConnector.getInstance().connect();
     return await Vehicle.find({});
+  }
+
+  public getFreeSpace() {
+    return this.parkingLot.getFreeSpots();
+  }
+
+  public getLotSpace() {
+    return this.parkingLot.getNSpots();
   }
 }

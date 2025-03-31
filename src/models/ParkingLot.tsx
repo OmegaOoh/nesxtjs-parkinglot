@@ -4,6 +4,7 @@ import { Vehicle } from "./Vehicle";
 
 export class ParkingLot {
   private levels: Array<Level> = new Array<Level>();
+  private nSlot = 0;
 
   public constructor(
     n_level: number,
@@ -21,6 +22,8 @@ export class ParkingLot {
         ),
       );
     }
+    this.nSlot =
+      n_level * (level_motorcycle_spot + level_compact_spot + level_large_spot);
   }
 
   public park(vehicle: Vehicle): Slot | undefined {
@@ -33,7 +36,7 @@ export class ParkingLot {
 
   public findSlot(slot: Slot): number {
     const level = this.levels.find((l) => l.findSlot(slot));
-    if (level == undefined) return "Not Found";
+    if (level == undefined) return -1;
     return level.getLevel();
   }
 
@@ -43,6 +46,10 @@ export class ParkingLot {
       n += level.getFreeSpot();
     }
     return n;
+  }
+
+  public getNSpots(): number {
+    return this.nSlot;
   }
 
   public parkAtSpot(vehicle: Vehicle, level: number, slot: number) {
@@ -55,5 +62,9 @@ export class ParkingLot {
       if (slot) return slot;
     }
     return undefined;
+  }
+  
+  public LeaveFromSpot(plate: string, level: number, slot: number) {
+    this.levels[level].leaveFromSpot(plate, slot)
   }
 }

@@ -2,22 +2,35 @@ import { useEffect, useState } from "react";
 
 export default function LandingPage() {
   const [lot, setLot] = useState([]);
+  const [freeSpace, setFreeSpace] = useState(0);
+  const [lotSpace, setLotSpace] = useState(0);
   const [licensePlate, setLicensePlate] = useState("");
   const [vehicleType, setVehicleType] = useState("Car");
   const [remPlate, setRemPlate] = useState("");
 
-  async function fetchLot() {
+  async function fetchVehicles() {
     const res = await fetch("/api/vehicles");
     const data = await res.json();
     return data;
   }
+  
+  async function fetchLot() {
+    const res = await fetch("/api/parkinglot")
+    const data = await res.json();
+    return data
+  }
 
+  async function getData() {
+    const data1 = await fetchVehicles();
+    setLot(data1.data);
+    const data2 = await fetchLot();
+    console.log(data2.data);
+    setFreeSpace(data2.data.free_spot);
+    setLotSpace(data2.data.n_spot);
+    
+  }
+  
   useEffect(() => {
-    async function getData() {
-      const data = await fetchLot();
-      console.log(data.data);
-      setLot(data.data);
-    }
     getData();
   }, []);
 
@@ -36,13 +49,14 @@ export default function LandingPage() {
       });
       if (response.ok) {
         // Refresh the data
-        const data = await fetchLot();
+        const data = await fetchVehicles();
         setLot(data.data);
         setLicensePlate("");
       }
     } catch (error) {
       console.error("Error adding vehicle:", error);
     }
+    getData();
   };
   
   const handleLeaveSubmit = async (e) => {
@@ -56,20 +70,19 @@ export default function LandingPage() {
       })
       if(response.ok) {        
         // Refresh the data
-        const data = await fetchLot();
+        const data = await fetchVehicles();
         setLot(data.data);
         setLicensePlate("");
       }
     } catch (error) {
       console.error(error);
     }
-    
+    getData()
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold text-center mb-8">Parking Lot</h1>
-      
+      <h1 className="text-4xl font-bold text-center mb-4">Parking Lot</h1>
       {/* Parking */}
       <div className="bg-gray-800 rounded-lg p-6 mb-8">
         <form onSubmit={handleParkSubmit} className="space-y-4">
@@ -119,25 +132,30 @@ export default function LandingPage() {
           <label htmlFor="licensePlate" className="block text-sm font-medium text-gray-300 mb-1">
             License Plate <span className="text-red-500">*</span>
           </label>
-          <input
-            id="licensePlate"
-            type="text"
-            value={remPlate}
-            onChange={(e) => setLicensePlate(e.target.value)}
-            placeholder="abc1234"
-            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
         </div>
-        
-        <button
-          type="submit"
-          className="w-full bg-red-800 hover:bg-red-900 text-white font-medium py-2 px-4 rounded-md transition-colors mt-3"
-        >
-          Leave
-        </button>
+          <form onSubmit={handleLeaveSubmit}>
+              <input
+                id="licensePlate"
+                type="text"
+                value={remPlate}
+                onChange={(e) => setRemPlate(e.target.value)}
+                placeholder="abc1234"
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            
+            <button
+              type="submit"
+              className="w-full bg-red-800 hover:bg-red-900 text-white font-medium py-2 px-4 rounded-md transition-colors mt-3"
+            >
+              Leave
+            </button>
+          </form>
       </div>
-      
+      {/*Parking Table*/}
+      <h2 className="text-2xl font-semibold text-left mb-4">
+        Free Slot: {freeSpace} / {lotSpace}
+      </h2>
       <div className="overflow-x-auto shadow-md rounded-lg">
         <table className="min-w-full bg-gray-700 border border-gray-900">
           <thead className="bg-gray-950">
