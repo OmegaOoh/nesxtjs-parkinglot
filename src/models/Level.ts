@@ -1,47 +1,41 @@
-import { spotSize } from "./enum";
-import { Slot } from "./ParkingSlot";
+import { ParkingSlot } from "./ParkingSlot";
 import { Vehicle } from "./Vehicle";
+import mongoose from "mongoose"
 
 export class Level {
   private level: number;
-  private availableSpace: number;
-  private parkingSlot: Array<Slot> = new Array<Slot>();
+  private availableSpace: number = 0;
+  private nSpace: number = 0;
+  private parkingSlot: Array<ParkingSlot> = new Array<ParkingSlot>();
 
-  public constructor(
-    level: number,
-    motorcycle_spot: number,
-    compact_spot: number,
-    large_spot: number,
-  ) {
+  public constructor(level: number) 
+  {
     this.level = level;
-    this.availableSpace = motorcycle_spot + compact_spot + large_spot;
-    // Spot Creation
-    for (let i = 0; i < motorcycle_spot; i++) {
-      this.parkingSlot.push(new Slot(spotSize.bike, i));
-    }
-    for (let i = 0; i < compact_spot; i++) {
-      this.parkingSlot.push(new Slot(spotSize.compact, i + motorcycle_spot));
-    }
-    for (let i = 0; i < large_spot; i++) {
-      this.parkingSlot.push(
-        new Slot(spotSize.large, i + motorcycle_spot + compact_spot),
-      );
-    }
+  }
+  
+  public addSpot(size: number, number: number) {
+    this.availableSpace++;
+    this.nSpace++;
+    this.parkingSlot.push(new ParkingSlot(size, number));
   }
 
-  public park(vehicle: Vehicle): Slot | undefined {
+  public park(vehicle: Vehicle): ParkingSlot | undefined {
     const park = this.parkingSlot.find((slot) => slot.park(vehicle));
     if (park == undefined) return undefined; // Cannot park
     this.availableSpace--;
     return park;
   }
 
-  public findSlot(slot: Slot) {
+  public findSlot(slot: ParkingSlot) {
     return this.parkingSlot.includes(slot);
   }
 
   public getLevel() {
     return this.level;
+  }
+  
+  public getSpace() {
+    return this.nSpace;
   }
 
   public getFreeSpot() {
@@ -49,23 +43,28 @@ export class Level {
   }
 
   public parkAtSpot(vehicle: Vehicle, spot: number) {
-    const parkSlot = this.parkingSlot[spot];
-    const canPark = parkSlot.park(vehicle);
-    if (canPark) {
-      this.availableSpace--;
+    for (const parkSlot of this.parkingSlot) {
+      if (parkSlot.getLotNumber() == spot) {    
+        const canPark = parkSlot.park(vehicle);
+        if (canPark) {
+          this.availableSpace--;
+        }
+        console.log(canPark)
+        return canPark;
+      }
     }
-    return canPark;
   }
 
   public leaveFromSpot(plate: string, spot: number) {
-    const slot = this.parkingSlot[spot];
-    if (slot.getVehicle()?.get_plate() == plate) {
-      slot.leave();
-      this.availableSpace++;
+    for (const slot of this.parkingSlot) {
+      if (slot.getVehicle()?.get_plate() == plate && slot.getLotNumber() == spot) {
+        slot.leave();
+        this.availableSpace++;
+      }
     }
   }
 
-  public findVehicle(plate: string): Slot | undefined {
+  public findVehicle(plate: string): ParkingSlot | undefined {
     for (const s of this.parkingSlot) {
       const vehicle = s.getVehicle();
       if (vehicle?.get_plate() == plate) return s;
@@ -73,3 +72,16 @@ export class Level {
     return undefined;
   }
 }
+
+const LevelSchema = new mongoose.Schema({
+  levelNumber: {
+    type: Number,
+    required: true,
+    unique: true,
+  },
+  slots: [
+    {type: mongoose.Schema.ObjectId, ref: "ParkingSlot"}
+  ]
+});
+
+export const LevelDBO = mongoose.model.Level || mongoose.model("Level", LevelSchema)

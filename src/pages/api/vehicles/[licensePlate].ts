@@ -1,5 +1,4 @@
-import DBConnector from "@/lib/mongodb";
-import { ParkingLotManager } from "@/lib/parkingManager";
+import { ParkingLotManager } from "@/lib/ParkingLotManager";
 
 export default async function handler(req, res) {
   const {
@@ -7,14 +6,13 @@ export default async function handler(req, res) {
     method,
   } = req;
 
-  await DBConnector.getInstance().connect();
   const manager: ParkingLotManager = ParkingLotManager.getInstance();
   
   switch (method) {
 
     case "DELETE":
       try {
-        const deletedVehicle = manager.vehicleLeave(licensePlate);
+        const deletedVehicle = await manager.vehicleLeave(licensePlate);
         if (!deletedVehicle) {
           return res
             .status(404)

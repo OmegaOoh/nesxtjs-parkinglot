@@ -1,32 +1,27 @@
 import { Level } from "./Level";
-import { Slot } from "./ParkingSlot";
+import { ParkingSlot } from "./ParkingSlot";
 import { Vehicle } from "./Vehicle";
+import mongoose from "mongoose";
 
 export class ParkingLot {
   private levels: Array<Level> = new Array<Level>();
-  private nSlot = 0;
 
-  public constructor(
-    n_level: number,
-    level_motorcycle_spot: number,
-    level_compact_spot: number,
-    level_large_spot: number,
-  ) {
-    for (let i = 0; i < n_level; i++) {
-      this.levels.push(
-        new Level(
-          i,
-          level_motorcycle_spot,
-          level_compact_spot,
-          level_large_spot,
-        ),
-      );
+  public constructor() {}
+
+  public addLevel(levelNum: number) {
+    this.levels.push(new Level(levelNum));
+  }
+  
+  public addSpot(level: number, size: number, spotNum: number) {
+    for (const lvl of this.levels) {
+      if (lvl.getLevel() == level) {
+        lvl.addSpot(size, spotNum);
+        return;
+      }
     }
-    this.nSlot =
-      n_level * (level_motorcycle_spot + level_compact_spot + level_large_spot);
   }
 
-  public park(vehicle: Vehicle): Slot | undefined {
+  public park(vehicle: Vehicle): ParkingSlot | undefined {
     for (const level of this.levels) {
       const slot = level.park(vehicle);
       if (slot != undefined) return slot;
@@ -34,7 +29,7 @@ export class ParkingLot {
     return undefined;
   }
 
-  public findSlot(slot: Slot): number {
+  public findSlot(slot: ParkingSlot): number {
     const level = this.levels.find((l) => l.findSlot(slot));
     if (level == undefined) return -1;
     return level.getLevel();
@@ -49,14 +44,18 @@ export class ParkingLot {
   }
 
   public getNSpots(): number {
-    return this.nSlot;
+    let nSlots = 0;
+    for (const l of this.levels) {
+      nSlots += l.getSpace();
+    }
+    return nSlots
   }
 
   public parkAtSpot(vehicle: Vehicle, level: number, slot: number) {
     this.levels[level].parkAtSpot(vehicle, slot);
   }
 
-  public findVehicle(plate: string): Slot | undefined {
+  public findVehicle(plate: string): ParkingSlot | undefined {
     for (const l of this.levels) {
       const slot = l.findVehicle(plate);
       if (slot) return slot;
@@ -65,6 +64,11 @@ export class ParkingLot {
   }
   
   public LeaveFromSpot(plate: string, level: number, slot: number) {
-    this.levels[level].leaveFromSpot(plate, slot)
+    for (const lvl of this.levels) {
+      if (lvl.getLevel() == level) {
+        lvl.leaveFromSpot(plate, slot)
+        return;
+      }
+    }
   }
 }

@@ -1,6 +1,7 @@
 import { Vehicle } from "./Vehicle";
+import mongoose from 'mongoose';
 
-export class Slot {
+export class ParkingSlot {
   private lot_number: number;
   private size: number;
   private parkedVechicle: Vehicle | undefined;
@@ -37,5 +38,12 @@ export class Slot {
   public getVehicle() {
     return this.parkedVechicle;
   }
-  
 }
+
+const ParkingSlotSchema = new mongoose.Schema({
+  SlotNumber: {type: Number, required: true},
+  Size: {type: Number, required: true},
+  ParkedVehicle: {type: mongoose.Schema.ObjectId, ref: "Vehicle"}
+});
+
+export const ParkingSlotDBO = mongoose.model.ParkingSlot || mongoose.model("ParkingSlot", ParkingSlotSchema)

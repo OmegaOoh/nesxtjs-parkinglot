@@ -1,8 +1,6 @@
-import DBConnector from '@/lib/mongodb';
-import { ParkingLotManager } from '@/lib/parkingManager';
+import { ParkingLotManager } from '@/lib/ParkingLotManager';
 
 export default async function handler(req, res) {
-  await DBConnector.getInstance().connect();
   const { method } = req;
   const manager = ParkingLotManager.getInstance();
   

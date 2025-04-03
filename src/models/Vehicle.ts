@@ -1,5 +1,6 @@
 import { ParkingLot } from "./ParkingLot";
-import { Slot } from "./ParkingSlot";
+import { ParkingSlot } from "./ParkingSlot";
+import mongoose from 'mongoose';
 
 export abstract class Vehicle {
   readonly sizeClass: number = Infinity;
@@ -9,11 +10,11 @@ export abstract class Vehicle {
     this.licensePlate = plate;
   }
   
-  public canFit(slot: Slot): boolean {
+  public canFit(slot: ParkingSlot): boolean {
     return slot.getSize() >= this.sizeClass
   }
   
-  public park(lot: ParkingLot): Slot | undefined{
+  public park(lot: ParkingLot): ParkingSlot | undefined{
     /* 
     Find and spot and park in ParkingLot,
     Return true if there is a spot to park else return false
@@ -53,3 +54,19 @@ export class Bus extends Vehicle {
     return "Bus"
   }  
 }
+
+const VehicleSchema = new mongoose.Schema({
+  licensePlate: { 
+    type: String, 
+    required: true,
+    unique: true,
+    
+  },
+  vehicleType: { 
+    type: String, 
+    required: true,
+    enum: ['Motorcycle', 'Car', 'Bus']
+  }
+});
+
+export const VehicleDBO = mongoose.models.Vehicle || mongoose.model('Vehicle', VehicleSchema);
